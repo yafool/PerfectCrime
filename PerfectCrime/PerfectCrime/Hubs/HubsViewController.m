@@ -1,0 +1,412 @@
+//
+//  HubsViewController.m
+//  PerfectCrime
+//
+//  Created by 刘亚夫 on 2017/6/14.
+//  Copyright © 2017年 com.agency. All rights reserved.
+//
+
+#import "HubsViewController.h"
+
+#import "WinViewController.h"
+#import "GradeViewController.h"
+#import "GamesViewController.h"
+#import "MVPViewController.h"
+
+//  分段指示器
+#pragma mark -------- SegmentBarItem [begin] ----------------/
+/** 指示器高度 */
+#define INDICATOR_HEIGHT 3
+
+@interface SegmentBarItem : UICollectionViewCell
+@property (nonatomic, strong) UILabel *titleLabel;
+@end
+
+@implementation SegmentBarItem
+
+- (id)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self.contentView addSubview:self.titleLabel];
+        
+        // 分割线需要背景View
+        UIView *separator = [[UIView alloc] initWithFrame:CGRectMake(0, self.contentView.bounds.size.height - 0.5, self.contentView.bounds.size.width, 0.5)];
+        [separator setAutoresizingMask:UIViewAutoresizingFlexibleWidth];
+        [separator setBackgroundColor:[UIColor lightGrayColor]];
+        [self.contentView addSubview:separator];
+    }
+    return self;
+}
+
+- (UILabel *)titleLabel
+{
+    if (!_titleLabel) {
+        _titleLabel = [[UILabel alloc] initWithFrame:self.contentView.bounds];
+        _titleLabel.autoresizingMask = (UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight);
+        _titleLabel.font = [UIFont systemFontOfSize:14];
+        _titleLabel.textAlignment = NSTextAlignmentCenter;
+    }
+    return _titleLabel;
+}
+
+- (void)setSelected:(BOOL)selected {
+    if (selected) {
+        self.titleLabel.textColor = [UIColor redColor];
+    } else {
+        self.titleLabel.textColor = [UIColor blackColor];
+    }
+}
+
+@end
+#pragma mark -------- SegmentBarItem [end] ----------------/
+
+@interface HubsViewController ()
+<UICollectionViewDataSource,
+UICollectionViewDelegate,
+UIScrollViewDelegate>
+
+@property (nonatomic, strong, readwrite) UICollectionView *segmentBar;
+@property (nonatomic, strong, readwrite) UIScrollView *slideView;
+@property (nonatomic, assign, readwrite) NSInteger selectedIndex;
+@property (nonatomic, strong, readwrite) UIView *indicator;
+@property (nonatomic, strong) UIView *indicatorBgView;
+
+@property (nonatomic, strong) UICollectionViewFlowLayout *segmentBarLayout;
+
+- (void)reset;
+@end
+
+@implementation HubsViewController
+
+@synthesize viewControllers = _viewControllers;
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        // Custom initialization
+        NSMutableArray *vcs = [NSMutableArray array];
+        
+        WinViewController *winVC = [[WinViewController alloc] init];
+        winVC.title = CustomLocalizedString(@"胜率", nil);
+        winVC.view.backgroundColor = [UIColor clearColor];
+        [vcs addObject:winVC];
+        
+        GradeViewController *gradeVC = [[GradeViewController alloc] init];
+        gradeVC.title = CustomLocalizedString(@"总分", nil);
+        gradeVC.view.backgroundColor = [UIColor clearColor];
+        [vcs addObject:gradeVC];
+        
+        GamesViewController *gamesVC = [[GamesViewController alloc] init];
+        gamesVC.title = CustomLocalizedString(@"总局数", nil);
+        gamesVC.view.backgroundColor = [UIColor clearColor];
+        [vcs addObject:gamesVC];
+        
+        MVPViewController *mvpVC = [[MVPViewController alloc] init];
+        mvpVC.title = CustomLocalizedString(@"MVP次数", nil);
+        mvpVC.view.backgroundColor = [UIColor clearColor];
+        [vcs addObject:mvpVC];
+        
+        _viewControllers = [vcs copy];
+        _selectedIndex = NSNotFound;
+        _itemWidth = [[UIScreen mainScreen]bounds].size.width/vcs.count;
+        _segmentBarHeight = 32.0;
+        
+        self.indicatorInsets = UIEdgeInsetsMake(0, 0, 0, 0);
+        self.indicator.backgroundColor = [UIColor redColor];
+        self.indicator.layer.cornerRadius = self.indicator.frame.size.height/2;
+    }
+    return self;
+}
+
+-(void)dealloc{
+    [[NSNotificationCenter defaultCenter]removeObserver:self];
+}
+
+- (void)viewWillAppear:(BOOL)animated{
+    [super viewWillAppear:animated];
+    
+    //判断有无网络
+    if(![CustomDeviceFunc isConnectionAvailable]){
+        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"网络异常" message:@"网络连接失败，请检查网络后重试" delegate:nil cancelButtonTitle:@"确定" otherButtonTitles:nil, nil];
+        [alert show];
+    }
+}
+
+-(void)viewDidAppear:(BOOL)animated{
+    [super viewDidAppear:animated];
+    
+    CGSize conentSize = CGSizeMake(self.view.frame.size.width * self.viewControllers.count, 0);
+    [self.slideView setContentSize:conentSize];
+}
+
+- (void)viewWillDisappear:(BOOL)animated{
+    [super viewWillDisappear:animated];
+}
+
+#pragma mark ------------------- 初始化数据 ---------------------
+-(void)initData{
+    
+}
+
+-(void)setNavigationItem{
+    
+    [self.navigationItem setItemWithTitle:CustomLocalizedString(@"友圈", nil) textColor:[CustomColorRGB colorWithHexString:kNavColor] fontSize:18 itemType:center];
+    
+    CustomBarItem *rightItem = [self.navigationItem setItemWithImage:@"contactButton" size:CGSizeMake(35, 35) itemType:right];
+    [rightItem setOffset:0];//设置item偏移量(正值向左偏，负值向右偏)
+    [rightItem addTarget:self selector:@selector(goContacts) event:(UIControlEventTouchUpInside)];
+    
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    self.view.backgroundColor = [CustomColorRGB colorWithHexString:viewBackgroundColor];
+    
+    [self setNavigationItem];
+    
+    [self setupSubviews];
+    [self reset];
+}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+// 通讯录
+- (void)goContacts {
+
+}
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+#pragma mark - Setup
+- (void)setupSubviews {
+    // iOS7 set layout 这里是为了不让导航栏遮挡
+    if (floor(NSFoundationVersionNumber) > NSFoundationVersionNumber_iOS_6_1) {
+        self.automaticallyAdjustsScrollViewInsets = NO;
+        self.edgesForExtendedLayout = UIRectEdgeNone;
+    }
+    [self.view addSubview:self.segmentBar];
+    
+    [self.segmentBar registerClass:[SegmentBarItem class] forCellWithReuseIdentifier:NSStringFromClass([SegmentBarItem class])];
+    [self.segmentBar addSubview:self.indicatorBgView];
+    [self.view addSubview:self.slideView];
+}
+
+#pragma mark - Property
+- (UIScrollView *)slideView {
+    if (!_slideView) {
+        CGRect frame = self.view.bounds;
+        frame.size.height -= _segmentBar.frame.size.height;
+        frame.origin.y = CGRectGetMaxY(_segmentBar.frame) + 12.0;
+        _slideView = [[UIScrollView alloc] initWithFrame:frame];
+        [_slideView setAutoresizingMask:(UIViewAutoresizingFlexibleWidth
+                                         | UIViewAutoresizingFlexibleHeight)];
+        [_slideView setShowsHorizontalScrollIndicator:NO];
+        [_slideView setShowsVerticalScrollIndicator:NO];
+        [_slideView setPagingEnabled:YES];
+        [_slideView setBounces:NO];
+        [_slideView setDelegate:self];
+    }
+    return _slideView;
+}
+
+- (UICollectionView *)segmentBar {
+    if (!_segmentBar) {
+        CGRect frame = self.view.bounds;
+        frame.size.height = self.segmentBarHeight - 1;
+        _segmentBar = [[UICollectionView alloc] initWithFrame:frame collectionViewLayout:self.segmentBarLayout];
+        _segmentBar.backgroundColor = [UIColor whiteColor];
+        _segmentBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+        _segmentBar.delegate = self;
+        _segmentBar.dataSource = self;
+        [_segmentBar setShowsHorizontalScrollIndicator:NO];
+        [_segmentBar setShowsVerticalScrollIndicator:NO];
+    }
+    return _segmentBar;
+}
+
+- (UIView *)indicatorBgView {
+    if (!_indicatorBgView) {
+        CGRect frame = CGRectMake(0, self.segmentBar.frame.size.height - INDICATOR_HEIGHT, self.itemWidth, INDICATOR_HEIGHT);
+        _indicatorBgView = [[UIView alloc] initWithFrame:frame];
+        _indicatorBgView.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleWidth;
+        _indicatorBgView.backgroundColor = [UIColor clearColor];
+        [_indicatorBgView addSubview:self.indicator];
+    }
+    return _indicatorBgView;
+}
+
+- (UIView *)indicator {
+    if (!_indicator) {
+        CGFloat width = self.itemWidth - self.indicatorInsets.left - self.indicatorInsets.right;
+        CGRect frame = CGRectMake(self.indicatorInsets.left, 0, width, INDICATOR_HEIGHT);
+        _indicator = [[UIView alloc] initWithFrame:frame];
+        _indicator.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
+        _indicator.backgroundColor = [UIColor redColor];
+    }
+    return _indicator;
+}
+
+- (void)setIndicatorInsets:(UIEdgeInsets)indicatorInsets {
+    _indicatorInsets = indicatorInsets;
+    CGRect frame = _indicator.frame;
+    frame.origin.x = _indicatorInsets.left;
+    CGFloat width = self.itemWidth - _indicatorInsets.left - _indicatorInsets.right;
+    frame.size.width = width;
+    frame.size.height = INDICATOR_HEIGHT;
+    _indicator.frame = frame;
+}
+
+- (UICollectionViewFlowLayout *)segmentBarLayout {
+    if (!_segmentBarLayout) {
+        _segmentBarLayout = [[UICollectionViewFlowLayout alloc] init];
+        _segmentBarLayout.itemSize = CGSizeMake(self.itemWidth, self.segmentBarHeight - 1);
+        _segmentBarLayout.sectionInset = UIEdgeInsetsZero;
+        _segmentBarLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
+        _segmentBarLayout.minimumLineSpacing = 0;
+        _segmentBarLayout.minimumInteritemSpacing = 0;
+    }
+    return _segmentBarLayout;
+}
+
+- (void)setSelectedIndex:(NSInteger)selectedIndex {
+    if (_selectedIndex == selectedIndex) {
+        return;
+    }
+    UIViewController *toSelectController = [self.viewControllers objectAtIndex:selectedIndex];
+    // Add selected view controller as child view controller
+    if (!toSelectController.parentViewController) {
+        [self addChildViewController:toSelectController];
+        CGRect rect = self.slideView.bounds;
+        rect.origin.x = rect.size.width * selectedIndex;
+        toSelectController.view.frame = rect;
+        [self.slideView addSubview:toSelectController.view];
+        [toSelectController didMoveToParentViewController:self];
+    }
+    _selectedIndex = selectedIndex;
+}
+
+- (void)setViewControllers:(NSArray *)viewControllers {
+    // Need remove previous viewControllers
+    for (UIViewController *vc in _viewControllers) {
+        [vc removeFromParentViewController];
+    }
+    _viewControllers = [viewControllers copy];
+    [self reset];
+}
+
+- (NSArray *)viewControllers {
+    return [_viewControllers copy];
+}
+
+- (UIViewController *)selectedViewController {
+    return self.viewControllers[self.selectedIndex];
+}
+
+#pragma mark - UICollectionViewDataSource
+
+- (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView {
+    if ([_dataSource respondsToSelector:@selector(numberOfSectionsInslideSegment:)]) {
+        return [_dataSource numberOfSectionsInslideSegment:collectionView];
+    }
+    return 1;
+}
+
+- (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
+    if ([_dataSource respondsToSelector:@selector(slideSegment:numberOfItemsInSection:)]) {
+        return [_dataSource slideSegment:collectionView numberOfItemsInSection:section];
+    }
+    return self.viewControllers.count;
+}
+
+- (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
+    if ([_dataSource respondsToSelector:@selector(slideSegment:cellForItemAtIndexPath:)]) {
+        return [_dataSource slideSegment:collectionView cellForItemAtIndexPath:indexPath];
+    }
+    
+    SegmentBarItem *segmentBarItem = [collectionView dequeueReusableCellWithReuseIdentifier:NSStringFromClass([SegmentBarItem class])
+                                                                               forIndexPath:indexPath];
+    UIViewController *vc = self.viewControllers[indexPath.row];
+    segmentBarItem.titleLabel.text = vc.title;
+    return segmentBarItem;
+}
+
+- (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
+    if (indexPath.row < 0 || indexPath.row >= self.viewControllers.count) {
+        return;
+    }
+    
+    UIViewController *vc = self.viewControllers[indexPath.row];
+    if ([_delegate respondsToSelector:@selector(slideSegment:didSelectedViewController:)]) {
+        [_delegate slideSegment:collectionView didSelectedViewController:vc];
+    }
+    [self setSelectedIndex:indexPath.row];
+    [self scrollToViewWithIndex:self.selectedIndex animated:NO];
+}
+
+- (BOOL)collectionView:(UICollectionView *)collectionView shouldSelectItemAtIndexPath:(NSIndexPath *)indexPath {
+    if (indexPath.row < 0 || indexPath.row >= self.viewControllers.count) {
+        return NO;
+    }
+    
+    BOOL flag = YES;
+    UIViewController *vc = self.viewControllers[indexPath.row];
+    if ([_delegate respondsToSelector:@selector(slideSegment:shouldSelectViewController:)]) {
+        flag = [_delegate slideSegment:collectionView shouldSelectViewController:vc];
+    }
+    return flag;
+}
+
+#pragma mark - UIScrollViewDelegate
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView
+{
+    if (scrollView == self.slideView) {
+        // set indicator frame
+        CGFloat percent = scrollView.contentOffset.x / scrollView.contentSize.width;
+        
+        CGRect frame = self.indicatorBgView.frame;
+        frame.origin.x = percent * self.segmentBar.contentSize.width;
+        self.indicatorBgView.frame = frame;
+        
+        NSInteger index = ceilf(percent * self.viewControllers.count);
+        if (index >= 0 && index < self.viewControllers.count) {
+            [self setSelectedIndex:index];
+            if (scrollView.isDecelerating || !scrollView.isTracking) {
+                [self.segmentBar selectItemAtIndexPath:[NSIndexPath indexPathForItem:index inSection:0] animated:YES
+                                        scrollPosition:UICollectionViewScrollPositionCenteredHorizontally];
+            }
+        }
+    }
+}
+
+#pragma mark - Action
+
+- (void)scrollToViewWithIndex:(NSInteger)index animated:(BOOL)animated {
+    CGRect rect = self.slideView.bounds;
+    rect.origin.x = rect.size.width * index;
+    [self.slideView setContentOffset:CGPointMake(rect.origin.x, rect.origin.y) animated:animated];
+}
+
+- (void)reset {
+    _selectedIndex = NSNotFound;
+    [self setSelectedIndex:0];
+    [self scrollToViewWithIndex:0 animated:NO];
+    [self.segmentBar reloadData];
+    [self.segmentBar selectItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0] animated:NO
+                            scrollPosition:UICollectionViewScrollPositionNone];
+}
+
+@end

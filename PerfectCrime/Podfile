@@ -1,0 +1,7 @@
+platform :ios,"7.0"
+
+target "PerfectCrime" do
+pod 'MJExtension', '3.0.13'
+pod 'MQTTKit'
+
+end

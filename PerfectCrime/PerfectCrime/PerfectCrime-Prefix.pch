@@ -1,0 +1,253 @@
+//
+//  PerfectCrime-Prefix.pch
+//  PerfectCrime
+//
+//  Created by 刘亚夫 on 2017/6/12.
+//  Copyright © 2017年 com.agency. All rights reserved.
+//
+
+#ifndef PerfectCrime_Prefix_pch
+#define PerfectCrime_Prefix_pch
+
+
+// Include any system framework and library headers here that should be included in all compilation units.
+// You will also need to set the Prefix Header build setting of one or more of your targets to reference this file.
+
+//define this constant if you want to use Masonry without the 'mas_' prefix
+#define MAS_SHORTHAND
+
+//define this constant if you want to enable auto-boxing for default syntax
+#define MAS_SHORTHAND_GLOBALS
+
+#import "AppDelegate.h"
+
+#import "Masonry.h"
+
+/*设备唯一标示*/
+#import "KeychainItemMode.h"
+/*设备唯一标示*/
+
+/*自定义--AFNetworking*/
+#import "HYBNetworking.h"
+/*自定义--AFNetworking*/
+
+/*自定义扩展的一些类*/
+#import "CustomDictionaryFunc.h"
+#import "CustomArrayFunc.h"
+#import "CustomColorRGB.h"
+#import "CustomDataFunc.h"
+#import "CustomDeviceFunc.h"
+#import "CustomNumbersFunc.h"
+#import "CustomSoftwareFunc.h"
+#import "CustomStringFunc.h"
+#import "CustomTextSizeFunc.h"
+#import "CustomCell_Image.h"
+#import "CustomNetWorkURL.h"
+/*自定义扩展的一些类*/
+
+/******************第三方控件 【Unity】**********************/
+#import "UIViewController+DismissKeyboard.h"
+#import "SettingsManager.h"
+#import "MyClass_Public.h"
+
+/******************第三方控件 【Library begin】**********************/
+#import "UINavigationItem+CustomItem.h"
+#import "XNNavViewController.h"
+#import "HYBNetworking.h"
+#import "Reachability.h"
+#import "MJRefresh.h"
+#import "JSONKit.h"
+#import "MBProgressHUD+JDragon.h"
+/******************第三方控件 【Library end】**********************/
+
+/******************聊天模块常量配置**********************/
+#import "Chat/ChatConstant.h"
+#import "Chat/ChatConfig.h"
+
+
+#define isOnLine        (1)                      //1.正式环境  2.开发环境
+
+#if (isOnLine == 1)
+    #define BaseUrl                                  @"http://seller.freepay.tech/rest/frontend/web/"//正式-生产 域名
+#elif (isOnLine == 2)
+    #define BaseUrl                                  @"http://seller.freepay.tech/rest/frontend/web/"//预生产 域名
+#endif
+
+
+#ifdef DEBUG
+#define LRString [NSString stringWithFormat:@"%s", __FILE__].lastPathComponent
+#define PCLog(...) printf("%s 第%d行: %s\n\n", [LRString UTF8String] ,__LINE__, [[NSString stringWithFormat:__VA_ARGS__] UTF8String]);
+
+#else
+#define PCLog(...)
+#endif
+
+//调用函数
+#define LogFun  PCLog(@"%s",__func__);
+//输出视图的frame边界
+#define LogFrame(view)  PCLog(@"%@",NSStringFromCGRect(view.frame) );
+//输出所有子视图
+#define LogSubviews(view)  PCLog(@"%@",view.subviews);
+
+
+#define StringFromInteger(s) [NSString stringWithFormat:@"%@",s]
+#define WS(weakSelf)       __weak __typeof(&*self)weakSelf = self;
+
+//Chinese（zh-Hans）、Chinese（zh-Hant）、Japanese（ja）
+/**
+#define AppLanguage @"appLanguage"
+#define CustomLocalizedString(key, comment) \
+[[NSBundle bundleWithPath:[[NSBundle mainBundle] pathForResource:[NSString stringWithFormat:@"%@",[[NSUserDefaults standardUserDefaults] objectForKey:@"appLanguage"]] ofType:@"lproj"]] localizedStringForKey:(key) value:@"" table:nil]
+*/
+// NSLocalizedString(key, comment) 本质
+// NSlocalizeString 第一个参数是内容,根据第一个参数去对应语言的文件中取对应的字符串，第二个参数将会转化为字符串文件里的注释，可以传nil，也可以传空字符串@""。
+#define CustomLocalizedString(key, comment) [[NSBundle mainBundle] localizedStringForKey:(key) value:@"" table:nil]
+
+
+/*
+ *iOS 8或之前，中文是华文细黑，英文是Helvetica Neue。iOS 9或之后，中文是苹方，英文是San Francisco。
+ *[UIFont systemFontOfSize:15];
+ *[UIFont boldSystemFontOfSize:15];
+ */
+#define  Text_Helvetica(_size)                [UIFont systemFontOfSize:_size]
+#define  Text_Helvetica_Bold(_size)           [UIFont boldSystemFontOfSize:_size]
+
+
+#define kTimeFormatOne         @"yyyy-MM-dd HH-mm-ss" //你要传过来日期的格式
+#define kTimeFormatTow         @"yyyy-MM-dd HH:mm:ss" //你要传过来日期的格式
+#define kTimeFormatThree       @"yyyy-MM-dd"          //你要传过来日期的格式
+#define kLocaleIdentifier      @"en_US"
+
+/* navigation view defined [begin]*/
+#define viewBackgroundColor    @"#f1f1f1"
+#define kNavigationColor       @"#fb644f"
+#define kLineColor             @"#d9d9d9"
+
+#define TitleTextColor0        @"#000000"
+#define TitleTextColor3        @"#333333"
+#define TitleTextColor6        @"#666666"
+#define TitleTextColor9        @"#999999"
+#define customeTextColor       @"#fb644f"
+
+// color
+#define viewBackgroundColor    @"#f1f1f1"
+#define kNavColor              @"#35393d"
+#define kTitleColor            @"#100f0f"
+#define kSubTitleColor         @"#979797"
+#define kLineColor             @"#d9d9d9"
+#define customeTextColor       @"#fb644f"
+
+// layout
+#define kTopInset    64
+#define kBottomInset 49
+#define lineH        0.5
+/* navigation view defined [end]*/
+
+
+/******************************重要区域****************************/
+
+#define WeiXinAppkey                             @"wxf6b45a8b24e06338"//微信
+#define WeiXinAppSecret                          @"6b73f768636d2d8d83971dea78493d4f"//微信
+
+#define isOnLine        (1)         //1.正式环境 2.预生产环境 3.开发环境
+
+#if (isOnLine == 1)
+
+
+//正式-生产 域名
+#define HomeUrl                                    @"http://47.94.89.243:8080"
+#define UserUrl                                    @"http://47.94.89.243:8080"//域名
+#define GameUrl                                    @"http://47.94.89.243:8080"//域名
+#define kIMHost                                    @"47.94.89.243" //MQTT host
+#define kIMPort                                    1883 //MQTT port
+
+#elif (isOnLine == 2)
+
+//预生产 域名
+#define HomeUrl                                    @"http://47.94.89.243:8080"
+#define UserUrl                                    @"http://47.94.89.243:8080"//域名
+#define GameUrl                                    @"http://47.94.89.243:8080"//域名
+#define kIMHost                                    @"47.94.89.243" //MQTT host
+#define kIMPort                                    1883 //MQTT port
+
+#else
+
+//开发 域名
+#define HomeUrl                                    @"https://kfbi.winksi.com.cn"
+#define UserUrl                                    @"https://kfcomm.winksi.com.cn"//域名
+#define GameUrl                                    @"https://kfcomm.winksi.com.cn"//域名
+#define kIMHost                                    @"47.94.89.243" //MQTT host
+#define kIMPort                                    1883 //MQTT port
+
+#endif
+
+
+/* 获取屏幕尺寸 */
+#define ViewFrame_bounds_width [[UIScreen mainScreen]bounds].size.width
+#define ViewFrame_bounds_height [[UIScreen mainScreen]bounds].size.height
+#define ViewFrame_bounds_x [[UIScreen mainScreen]bounds].origin.x
+#define ViewFrame_bounds_y [[UIScreen mainScreen]bounds].origin.y
+
+//先按照6的尺寸布局，获取比例再布局小尺寸的屏幕
+#define isSizeScaleWith(w)    w*(ViewFrame_bounds_width/375)
+#define isSizeScaleHeight(h)  h*(ViewFrame_bounds_height/667)
+
+//判断手机系统版本
+#define IOS_VERSION_7_OR_ABOVE (([[[UIDevice currentDevice] systemVersion] floatValue] >= 7.0)? (YES):(NO))
+#define IOS_VERSION_8_OR_ABOVE (([[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0)? (YES):(NO))
+#define IOS_VERSION_9_OR_ABOVE (([[[UIDevice currentDevice] systemVersion] floatValue] >= 9.0)? (YES):(NO))
+#define IOS_VERSION_10_OR_ABOVE (([[[UIDevice currentDevice] systemVersion] floatValue] >= 10.0)? (YES):(NO))
+
+
+/**
+ * 强弱引用转换，用于解决代码块（block）与强引用self之间的循环引用问题
+ * 调用方式: `@weakify_self`实现弱引用转换，`@strongify_self`实现强引用转换
+ *
+ * 示例：
+ * @weakify_self
+ * [obj block:^{
+ * @strongify_self
+ * self.property = something;
+ * }];
+ */
+#ifndef    weakify_self
+#if __has_feature(objc_arc)
+#define weakify_self autoreleasepool{} __weak __typeof__(self) weakSelf = self;
+#else
+#define weakify_self autoreleasepool{} __block __typeof__(self) blockSelf = self;
+#endif
+#endif
+#ifndef    strongify_self
+#if __has_feature(objc_arc)
+#define strongify_self try{} @finally{} __typeof__(weakSelf) self = weakSelf;
+#else
+#define strongify_self try{} @finally{} __typeof__(blockSelf) self = blockSelf;
+#endif
+#endif
+/**
+ * 强弱引用转换，用于解决代码块（block）与强引用对象之间的循环引用问题
+ * 调用方式: `@weakify(object)`实现弱引用转换，`@strongify(object)`实现强引用转换
+ *
+ * 示例：
+ * @weakify(object)
+ * [obj block:^{
+ * @strongify(object)
+ * strong_object = something;
+ * }];
+ */
+#ifndef    weakify
+#if __has_feature(objc_arc)
+#define weakify(object) autoreleasepool{} __weak __typeof__(object) weak##_##object = object;
+#else
+#define weakify(object) autoreleasepool{} __block __typeof__(object) block##_##object = object;
+#endif
+#endif
+#ifndef    strongify
+#if __has_feature(objc_arc)
+#define strongify(object) try{} @finally{} __typeof__(object) strong##_##object = weak##_##object;
+#else
+#define strongify(object) try{} @finally{} __typeof__(object) strong##_##object = block##_##object;
+#endif
+#endif
+
+#endif /* PerfectCrime_Prefix_pch */
